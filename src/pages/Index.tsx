@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import Icon from '@/components/ui/icon';
 import {
   Sheet,
@@ -11,9 +11,15 @@ import {
   SheetTitle,
   SheetTrigger,
 } from '@/components/ui/sheet';
-import { Slider } from '@/components/ui/slider';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Label } from '@/components/ui/label';
 
 interface Game {
   id: number;
@@ -24,15 +30,50 @@ interface Game {
   genre: string[];
   platform: string[];
   rating: number;
-  downloads: string;
-  size: string;
+  downloads?: string;
+  size?: string;
   discount?: number;
   isFree?: boolean;
+  type: 'pc' | 'mobile';
 }
 
-const mockGames: Game[] = [
+const initialGames: Game[] = [
   {
     id: 1,
+    title: 'Cyberpunk 2077',
+    price: 2999,
+    originalPrice: 3999,
+    image: '/placeholder.svg',
+    genre: ['Экшен', 'RPG'],
+    platform: ['PC', 'Steam'],
+    rating: 4.8,
+    discount: 25,
+    type: 'pc'
+  },
+  {
+    id: 2,
+    title: 'Elden Ring',
+    price: 3499,
+    image: '/placeholder.svg',
+    genre: ['RPG', 'Фэнтези'],
+    platform: ['PC', 'Steam'],
+    rating: 4.9,
+    type: 'pc'
+  },
+  {
+    id: 3,
+    title: 'GTA V',
+    price: 1999,
+    originalPrice: 2499,
+    image: '/placeholder.svg',
+    genre: ['Экшен', 'Открытый мир'],
+    platform: ['PC', 'Epic Games'],
+    rating: 4.7,
+    discount: 20,
+    type: 'pc'
+  },
+  {
+    id: 4,
     title: 'Cosmic Clash',
     price: 0,
     isFree: true,
@@ -41,22 +82,11 @@ const mockGames: Game[] = [
     platform: ['iOS', 'Android'],
     rating: 4.8,
     downloads: '10M+',
-    size: '156 МБ'
+    size: '156 МБ',
+    type: 'mobile'
   },
   {
-    id: 2,
-    title: 'Candy Kingdom',
-    price: 0,
-    isFree: true,
-    image: '/placeholder.svg',
-    genre: ['Головоломка', 'Казуальная'],
-    platform: ['iOS', 'Android'],
-    rating: 4.6,
-    downloads: '50M+',
-    size: '89 МБ'
-  },
-  {
-    id: 3,
+    id: 5,
     title: 'Dragon Fighters Pro',
     price: 599,
     originalPrice: 899,
@@ -66,45 +96,11 @@ const mockGames: Game[] = [
     rating: 4.9,
     downloads: '5M+',
     size: '234 МБ',
-    discount: 33
-  },
-  {
-    id: 4,
-    title: 'Speed Racing Xtreme',
-    price: 299,
-    image: '/placeholder.svg',
-    genre: ['Гонки', 'Симулятор'],
-    platform: ['iOS', 'Android'],
-    rating: 4.5,
-    downloads: '8M+',
-    size: '412 МБ'
-  },
-  {
-    id: 5,
-    title: 'Zombie Apocalypse',
-    price: 0,
-    isFree: true,
-    image: '/placeholder.svg',
-    genre: ['Хоррор', 'Выживание'],
-    platform: ['Android'],
-    rating: 4.7,
-    downloads: '15M+',
-    size: '287 МБ'
+    discount: 33,
+    type: 'mobile'
   },
   {
     id: 6,
-    title: 'Farm Paradise',
-    price: 0,
-    isFree: true,
-    image: '/placeholder.svg',
-    genre: ['Симулятор', 'Казуальная'],
-    platform: ['iOS', 'Android'],
-    rating: 4.4,
-    downloads: '25M+',
-    size: '145 МБ'
-  },
-  {
-    id: 7,
     title: 'Battle Royale Mobile',
     price: 0,
     isFree: true,
@@ -113,103 +109,197 @@ const mockGames: Game[] = [
     platform: ['iOS', 'Android'],
     rating: 4.8,
     downloads: '100M+',
-    size: '523 МБ'
-  },
-  {
-    id: 8,
-    title: 'Chess Master Premium',
-    price: 449,
-    originalPrice: 699,
-    image: '/placeholder.svg',
-    genre: ['Стратегия', 'Настольная'],
-    platform: ['iOS', 'Android'],
-    rating: 4.9,
-    downloads: '3M+',
-    size: '67 МБ',
-    discount: 36
-  },
-  {
-    id: 9,
-    title: 'Pixel Dungeon',
-    price: 0,
-    isFree: true,
-    image: '/placeholder.svg',
-    genre: ['RPG', 'Roguelike'],
-    platform: ['Android'],
-    rating: 4.6,
-    downloads: '12M+',
-    size: '34 МБ'
+    size: '523 МБ',
+    type: 'mobile'
   }
 ];
 
-const genres = ['Экшен', 'RPG', 'Головоломка', 'Казуальная', 'Фэнтези', 'Гонки', 'Симулятор', 'Хоррор', 'Выживание', 'Стратегия', 'Мультиплеер'];
-const platforms = ['iOS', 'Android'];
+const bonusPrizes = [
+  { id: 1, text: '10%', color: 'gradient-purple', value: 10 },
+  { id: 2, text: '25%', color: 'gradient-pink', value: 25 },
+  { id: 3, text: '50%', color: 'gradient-orange', value: 50 },
+  { id: 4, text: '+100₽', color: 'gradient-green', value: 100 },
+  { id: 5, text: '5%', color: 'gradient-blue', value: 5 },
+  { id: 6, text: '+50₽', color: 'gradient-purple', value: 50 },
+  { id: 7, text: '15%', color: 'gradient-pink', value: 15 },
+  { id: 8, text: '+200₽', color: 'gradient-green', value: 200 }
+];
 
 const Index = () => {
+  const [games, setGames] = useState<Game[]>(initialGames);
   const [searchQuery, setSearchQuery] = useState('');
   const [cart, setCart] = useState<number[]>([]);
-  const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
-  const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([]);
-  const [priceRange, setPriceRange] = useState([0, 1000]);
-  const [filterType, setFilterType] = useState<'all' | 'free' | 'paid'>('all');
-  const [isFilterOpen, setIsFilterOpen] = useState(false);
-
-  const filteredGames = mockGames.filter(game => {
-    const matchesSearch = game.title.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesGenre = selectedGenres.length === 0 || game.genre.some(g => selectedGenres.includes(g));
-    const matchesPlatform = selectedPlatforms.length === 0 || game.platform.some(p => selectedPlatforms.includes(p));
-    const matchesPrice = game.price >= priceRange[0] && game.price <= priceRange[1];
-    const matchesType = filterType === 'all' || 
-      (filterType === 'free' && game.isFree) || 
-      (filterType === 'paid' && !game.isFree);
-    return matchesSearch && matchesGenre && matchesPlatform && matchesPrice && matchesType;
+  const [activeTab, setActiveTab] = useState<'pc' | 'mobile'>('pc');
+  const [isAdminOpen, setIsAdminOpen] = useState(false);
+  const [isSpinning, setIsSpinning] = useState(false);
+  const [currentPrize, setCurrentPrize] = useState<typeof bonusPrizes[0] | null>(null);
+  const [balance, setBalance] = useState(0);
+  
+  const [newGame, setNewGame] = useState({
+    title: '',
+    price: '',
+    image: '',
+    genre: '',
+    platform: '',
+    type: 'pc' as 'pc' | 'mobile'
   });
 
-  const toggleGenre = (genre: string) => {
-    setSelectedGenres(prev => 
-      prev.includes(genre) ? prev.filter(g => g !== genre) : [...prev, genre]
-    );
-  };
-
-  const togglePlatform = (platform: string) => {
-    setSelectedPlatforms(prev => 
-      prev.includes(platform) ? prev.filter(p => p !== platform) : [...prev, platform]
-    );
-  };
+  const filteredGames = games.filter(game => {
+    const matchesSearch = game.title.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesType = game.type === activeTab;
+    return matchesSearch && matchesType;
+  });
 
   const addToCart = (gameId: number) => {
     setCart(prev => [...prev, gameId]);
   };
 
   const totalCartPrice = cart.reduce((sum, gameId) => {
-    const game = mockGames.find(g => g.id === gameId);
+    const game = games.find(g => g.id === gameId);
     return sum + (game?.price || 0);
   }, 0);
+
+  const handleAddGame = () => {
+    if (!newGame.title || !newGame.price) return;
+    
+    const game: Game = {
+      id: games.length + 1,
+      title: newGame.title,
+      price: parseFloat(newGame.price),
+      image: newGame.image || '/placeholder.svg',
+      genre: newGame.genre.split(',').map(g => g.trim()),
+      platform: newGame.platform.split(',').map(p => p.trim()),
+      rating: 4.5,
+      type: newGame.type,
+      ...(newGame.type === 'mobile' && { downloads: '0+', size: '0 МБ' })
+    };
+
+    setGames([...games, game]);
+    setNewGame({ title: '', price: '', image: '', genre: '', platform: '', type: 'pc' });
+    setIsAdminOpen(false);
+  };
+
+  const spinWheel = () => {
+    if (isSpinning) return;
+    
+    setIsSpinning(true);
+    setCurrentPrize(null);
+    
+    setTimeout(() => {
+      const randomPrize = bonusPrizes[Math.floor(Math.random() * bonusPrizes.length)];
+      setCurrentPrize(randomPrize);
+      
+      if (randomPrize.text.includes('₽')) {
+        setBalance(prev => prev + randomPrize.value);
+      }
+      
+      setIsSpinning(false);
+    }, 3000);
+  };
 
   return (
     <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-50 backdrop-blur-lg bg-background/90 border-b border-border">
         <div className="container mx-auto px-4 py-3">
           <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-2">
-              <div className="w-10 h-10 rounded-xl gradient-purple flex items-center justify-center glow-purple">
-                <Icon name="Smartphone" className="text-white" size={22} />
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-xl gradient-purple flex items-center justify-center glow-purple">
+                <Icon name="ShoppingBag" className="text-white" size={24} />
               </div>
               <div>
-                <h1 className="text-xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-                  MobileGames
+                <h1 className="text-2xl font-bold bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent">
+                  AdminShop.ru
                 </h1>
-                <p className="text-xs text-muted-foreground">Магазин мобильных игр</p>
+                <p className="text-xs text-muted-foreground">Магазин цифровых игр</p>
               </div>
             </div>
 
             <div className="flex items-center gap-2">
+              <Dialog open={isAdminOpen} onOpenChange={setIsAdminOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" size="sm" className="hidden md:flex">
+                    <Icon name="Settings" className="mr-2" size={16} />
+                    Админ-панель
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-2xl">
+                  <DialogHeader>
+                    <DialogTitle>Добавить игру</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4 py-4">
+                    <div className="space-y-2">
+                      <Label>Тип игры</Label>
+                      <Tabs value={newGame.type} onValueChange={(v) => setNewGame({...newGame, type: v as any})}>
+                        <TabsList className="w-full">
+                          <TabsTrigger value="pc" className="flex-1">ПК игра</TabsTrigger>
+                          <TabsTrigger value="mobile" className="flex-1">Мобильная игра</TabsTrigger>
+                        </TabsList>
+                      </Tabs>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label>Название игры</Label>
+                      <Input 
+                        placeholder="Введите название"
+                        value={newGame.title}
+                        onChange={(e) => setNewGame({...newGame, title: e.target.value})}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Цена (₽)</Label>
+                      <Input 
+                        type="number"
+                        placeholder="999"
+                        value={newGame.price}
+                        onChange={(e) => setNewGame({...newGame, price: e.target.value})}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>URL изображения</Label>
+                      <Input 
+                        placeholder="https://example.com/image.jpg"
+                        value={newGame.image}
+                        onChange={(e) => setNewGame({...newGame, image: e.target.value})}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Жанры (через запятую)</Label>
+                      <Input 
+                        placeholder="Экшен, RPG, Фэнтези"
+                        value={newGame.genre}
+                        onChange={(e) => setNewGame({...newGame, genre: e.target.value})}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Платформы (через запятую)</Label>
+                      <Input 
+                        placeholder={newGame.type === 'pc' ? 'PC, Steam, Epic Games' : 'iOS, Android'}
+                        value={newGame.platform}
+                        onChange={(e) => setNewGame({...newGame, platform: e.target.value})}
+                      />
+                    </div>
+
+                    <Button 
+                      className="w-full gradient-purple glow-purple"
+                      onClick={handleAddGame}
+                    >
+                      <Icon name="Plus" className="mr-2" size={18} />
+                      Добавить игру
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
+
               <Sheet>
                 <SheetTrigger asChild>
                   <Button variant="outline" size="icon" className="relative">
-                    <Icon name="ShoppingBag" size={20} />
+                    <Icon name="ShoppingCart" size={20} />
                     {cart.length > 0 && (
-                      <Badge className="absolute -top-2 -right-2 h-5 w-5 p-0 flex items-center justify-center gradient-magenta text-xs">
+                      <Badge className="absolute -top-2 -right-2 h-5 w-5 p-0 flex items-center justify-center gradient-pink text-xs">
                         {cart.length}
                       </Badge>
                     )}
@@ -222,13 +312,13 @@ const Index = () => {
                   <div className="mt-4">
                     {cart.length === 0 ? (
                       <div className="text-center py-8">
-                        <Icon name="ShoppingBag" size={48} className="mx-auto text-muted-foreground mb-3" />
+                        <Icon name="ShoppingCart" size={48} className="mx-auto text-muted-foreground mb-3" />
                         <p className="text-muted-foreground">Корзина пуста</p>
                       </div>
                     ) : (
                       <div className="space-y-4">
                         {cart.map((gameId, idx) => {
-                          const game = mockGames.find(g => g.id === gameId);
+                          const game = games.find(g => g.id === gameId);
                           return game ? (
                             <Card key={idx} className="border-border">
                               <CardContent className="p-3">
@@ -246,11 +336,41 @@ const Index = () => {
                             </Card>
                           ) : null;
                         })}
+                        
+                        {balance > 0 && (
+                          <Card className="border-green-500/50 bg-green-500/10">
+                            <CardContent className="p-3">
+                              <div className="flex items-center justify-between">
+                                <span className="text-sm font-medium">Бонусный баланс:</span>
+                                <span className="font-bold text-green-400">+{balance} ₽</span>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        )}
+
                         <div className="pt-4 border-t border-border">
-                          <div className="flex justify-between mb-4">
-                            <span className="font-semibold">Итого:</span>
-                            <span className="font-bold text-xl text-primary">{totalCartPrice} ₽</span>
+                          <div className="flex justify-between mb-2">
+                            <span className="text-sm">Сумма:</span>
+                            <span className="text-sm">{totalCartPrice} ₽</span>
                           </div>
+                          {balance > 0 && (
+                            <>
+                              <div className="flex justify-between mb-2 text-green-400">
+                                <span className="text-sm">Бонусы:</span>
+                                <span className="text-sm">-{Math.min(balance, totalCartPrice)} ₽</span>
+                              </div>
+                              <div className="flex justify-between mb-4 font-bold text-lg">
+                                <span>Итого:</span>
+                                <span className="text-primary">{Math.max(0, totalCartPrice - balance)} ₽</span>
+                              </div>
+                            </>
+                          )}
+                          {balance === 0 && (
+                            <div className="flex justify-between mb-4 font-bold text-lg">
+                              <span>Итого:</span>
+                              <span className="text-primary">{totalCartPrice} ₽</span>
+                            </div>
+                          )}
                           <Button className="w-full gradient-purple glow-purple">
                             <Icon name="CreditCard" className="mr-2" size={18} />
                             Оформить заказ
@@ -283,150 +403,122 @@ const Index = () => {
       </header>
 
       <main className="container mx-auto px-4 py-6">
-        <section className="mb-8 relative overflow-hidden rounded-2xl animate-fade-in">
-          <div className="gradient-purple p-8 md:p-12 relative">
-            <div className="absolute top-0 right-0 w-64 h-64 bg-secondary/20 rounded-full blur-3xl"></div>
-            <div className="absolute bottom-0 left-0 w-64 h-64 bg-accent/20 rounded-full blur-3xl"></div>
-            <div className="relative z-10 max-w-2xl">
-              <div className="flex items-center gap-2 mb-3">
-                <Badge className="bg-white/20 text-white border-0">🔥 Горячее</Badge>
-                <Badge className="bg-white/20 text-white border-0">Новинки</Badge>
-              </div>
-              <h2 className="text-4xl md:text-5xl font-bold text-white mb-3 animate-fade-in">
-                Топ игры недели
-              </h2>
-              <p className="text-white/90 text-lg mb-6 animate-slide-up">
-                Скидки до 50% на лучшие мобильные игры
-              </p>
-              <div className="flex flex-wrap gap-3 animate-scale-in">
-                <Button size="lg" variant="secondary" className="glow-magenta">
+        <section className="mb-8 grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 relative overflow-hidden rounded-2xl animate-fade-in">
+            <div className="gradient-purple p-8 md:p-10 relative">
+              <div className="absolute top-0 right-0 w-64 h-64 bg-secondary/20 rounded-full blur-3xl"></div>
+              <div className="absolute bottom-0 left-0 w-64 h-64 bg-accent/20 rounded-full blur-3xl"></div>
+              <div className="relative z-10">
+                <Badge className="bg-white/20 text-white border-0 mb-3">🔥 Топ продаж</Badge>
+                <h2 className="text-3xl md:text-4xl font-bold text-white mb-3">
+                  Лучшие игры недели
+                </h2>
+                <p className="text-white/90 mb-6">
+                  Скидки до 50% на популярные игры
+                </p>
+                <Button size="lg" variant="secondary" className="glow-pink">
                   <Icon name="Sparkles" className="mr-2" size={20} />
-                  Смотреть все
-                </Button>
-                <Button size="lg" variant="outline" className="bg-white/10 border-white/20 text-white hover:bg-white/20">
-                  <Icon name="TrendingUp" className="mr-2" size={20} />
-                  Рейтинг
+                  Смотреть каталог
                 </Button>
               </div>
             </div>
           </div>
-        </section>
 
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h3 className="text-2xl font-bold mb-1">Каталог игр</h3>
-            <p className="text-sm text-muted-foreground">Найдено: {filteredGames.length} игр</p>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <Tabs value={filterType} onValueChange={(v) => setFilterType(v as any)} className="hidden sm:block">
-              <TabsList>
-                <TabsTrigger value="all">Все</TabsTrigger>
-                <TabsTrigger value="free">Бесплатные</TabsTrigger>
-                <TabsTrigger value="paid">Платные</TabsTrigger>
-              </TabsList>
-            </Tabs>
-
-            <Sheet open={isFilterOpen} onOpenChange={setIsFilterOpen}>
-              <SheetTrigger asChild>
-                <Button variant="outline" size="sm">
-                  <Icon name="Filter" className="mr-2" size={16} />
-                  Фильтры
-                  {(selectedGenres.length > 0 || selectedPlatforms.length > 0) && (
-                    <Badge className="ml-2 h-5 w-5 p-0 flex items-center justify-center gradient-magenta text-xs">
-                      {selectedGenres.length + selectedPlatforms.length}
-                    </Badge>
-                  )}
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="left">
-                <SheetHeader>
-                  <SheetTitle>Фильтры</SheetTitle>
-                </SheetHeader>
-                <div className="mt-6 space-y-6">
-                  <div>
-                    <h4 className="font-semibold mb-3 flex items-center gap-2">
-                      <Icon name="Gamepad2" size={18} />
-                      Жанры
-                    </h4>
-                    <div className="space-y-2 max-h-48 overflow-y-auto">
-                      {genres.map(genre => (
-                        <div key={genre} className="flex items-center gap-2">
-                          <Checkbox 
-                            id={genre}
-                            checked={selectedGenres.includes(genre)}
-                            onCheckedChange={() => toggleGenre(genre)}
-                          />
-                          <label htmlFor={genre} className="text-sm cursor-pointer flex-1">
-                            {genre}
-                          </label>
+          <Card className="border-border bg-gradient-to-br from-card to-card/50 overflow-hidden">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Icon name="Gift" className="text-primary" size={24} />
+                Бонусный барабан
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="relative">
+                <div className="w-full aspect-square rounded-full border-4 border-primary/30 flex items-center justify-center relative overflow-hidden">
+                  <div className={`absolute inset-0 ${isSpinning ? 'animate-spin-slow' : ''}`}>
+                    {bonusPrizes.map((prize, idx) => (
+                      <div
+                        key={prize.id}
+                        className={`absolute w-full h-1/2 origin-bottom ${prize.color}`}
+                        style={{
+                          transform: `rotate(${idx * 45}deg)`,
+                          clipPath: 'polygon(50% 0%, 65% 50%, 50% 100%, 35% 50%)'
+                        }}
+                      >
+                        <div 
+                          className="absolute top-2 left-1/2 -translate-x-1/2 text-white text-xs font-bold whitespace-nowrap"
+                          style={{ transform: 'rotate(180deg)' }}
+                        >
+                          {prize.text}
                         </div>
-                      ))}
-                    </div>
+                      </div>
+                    ))}
                   </div>
-
-                  <div>
-                    <h4 className="font-semibold mb-3 flex items-center gap-2">
-                      <Icon name="Smartphone" size={18} />
-                      Платформы
-                    </h4>
-                    <div className="space-y-2">
-                      {platforms.map(platform => (
-                        <div key={platform} className="flex items-center gap-2">
-                          <Checkbox 
-                            id={platform}
-                            checked={selectedPlatforms.includes(platform)}
-                            onCheckedChange={() => togglePlatform(platform)}
-                          />
-                          <label htmlFor={platform} className="text-sm cursor-pointer flex-1">
-                            {platform}
-                          </label>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div>
-                    <h4 className="font-semibold mb-3 flex items-center gap-2">
-                      <Icon name="DollarSign" size={18} />
-                      Цена: {priceRange[0]} - {priceRange[1]} ₽
-                    </h4>
-                    <Slider
-                      min={0}
-                      max={1000}
-                      step={50}
-                      value={priceRange}
-                      onValueChange={setPriceRange}
-                      className="my-4"
-                    />
-                  </div>
-
-                  <div className="flex gap-2">
-                    <Button 
-                      variant="outline" 
-                      className="flex-1"
-                      onClick={() => {
-                        setSelectedGenres([]);
-                        setSelectedPlatforms([]);
-                        setPriceRange([0, 1000]);
-                      }}
-                    >
-                      Сбросить
-                    </Button>
-                    <Button 
-                      className="flex-1 gradient-purple"
-                      onClick={() => setIsFilterOpen(false)}
-                    >
-                      Применить
-                    </Button>
+                  <div className="relative z-10 w-16 h-16 rounded-full bg-card border-4 border-primary flex items-center justify-center glow-purple">
+                    <Icon name="Star" className="text-primary" size={24} />
                   </div>
                 </div>
-              </SheetContent>
-            </Sheet>
-          </div>
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-2 z-20">
+                  <div className="w-0 h-0 border-l-[12px] border-r-[12px] border-t-[20px] border-l-transparent border-r-transparent border-t-primary glow-purple"></div>
+                </div>
+              </div>
+
+              {currentPrize && (
+                <div className="text-center p-4 rounded-lg border border-primary/50 bg-primary/10 animate-scale-in">
+                  <p className="text-sm text-muted-foreground mb-1">Вы выиграли:</p>
+                  <p className="text-2xl font-bold text-primary">
+                    {currentPrize.text.includes('₽') ? `${currentPrize.text} на баланс` : `Скидка ${currentPrize.text}`}
+                  </p>
+                </div>
+              )}
+
+              <Button 
+                className="w-full gradient-pink glow-pink"
+                onClick={spinWheel}
+                disabled={isSpinning}
+              >
+                {isSpinning ? (
+                  <>
+                    <Icon name="Loader2" className="mr-2 animate-spin" size={18} />
+                    Вращается...
+                  </>
+                ) : (
+                  <>
+                    <Icon name="Play" className="mr-2" size={18} />
+                    Крутить барабан
+                  </>
+                )}
+              </Button>
+              
+              <p className="text-xs text-center text-muted-foreground">
+                Получите скидку на покупку или бонусы на баланс!
+              </p>
+            </CardContent>
+          </Card>
+        </section>
+
+        <div className="mb-6">
+          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)}>
+            <TabsList className="w-full max-w-md">
+              <TabsTrigger value="pc" className="flex-1">
+                <Icon name="Monitor" className="mr-2" size={18} />
+                ПК игры
+              </TabsTrigger>
+              <TabsTrigger value="mobile" className="flex-1">
+                <Icon name="Smartphone" className="mr-2" size={18} />
+                Мобильные игры
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="mb-4">
+          <h3 className="text-2xl font-bold mb-1">
+            {activeTab === 'pc' ? 'ПК игры' : 'Мобильные игры'}
+          </h3>
+          <p className="text-sm text-muted-foreground">Найдено: {filteredGames.length} игр</p>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {filteredGames.map((game, idx) => (
             <Card 
               key={game.id} 
@@ -438,11 +530,11 @@ const Index = () => {
                   <img 
                     src={game.image} 
                     alt={game.title}
-                    className="w-full h-40 object-cover group-hover:scale-110 transition-transform duration-300"
+                    className="w-full h-48 object-cover group-hover:scale-110 transition-transform duration-300"
                   />
                   <div className="absolute top-0 left-0 right-0 p-2 flex justify-between items-start">
                     {game.isFree && (
-                      <Badge className="gradient-blue glow-blue text-white border-0">
+                      <Badge className="gradient-green glow-green text-white border-0">
                         Бесплатно
                       </Badge>
                     )}
@@ -464,57 +556,50 @@ const Index = () => {
                 <div className="p-4 space-y-3">
                   <h4 className="font-bold text-lg leading-tight">{game.title}</h4>
                   
-                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                  <div className="flex items-center gap-4 text-xs text-muted-foreground">
                     <div className="flex items-center gap-1">
                       <Icon name="Star" className="text-yellow-400 fill-yellow-400" size={14} />
                       <span className="font-semibold text-foreground">{game.rating}</span>
                     </div>
-                    <div className="flex items-center gap-1">
-                      <Icon name="Download" size={14} />
-                      <span>{game.downloads}</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <Icon name="HardDrive" size={14} />
-                      <span>{game.size}</span>
-                    </div>
+                    {game.downloads && (
+                      <div className="flex items-center gap-1">
+                        <Icon name="Download" size={14} />
+                        <span>{game.downloads}</span>
+                      </div>
+                    )}
+                    {game.size && (
+                      <div className="flex items-center gap-1">
+                        <Icon name="HardDrive" size={14} />
+                        <span>{game.size}</span>
+                      </div>
+                    )}
                   </div>
 
                   <div className="flex flex-wrap gap-1">
                     {game.platform.map(platform => (
                       <Badge key={platform} variant="outline" className="text-xs">
-                        {platform === 'iOS' ? '🍎' : '🤖'} {platform}
+                        {platform}
                       </Badge>
                     ))}
                   </div>
 
-                  <div className="flex items-center justify-between pt-2">
-                    <div>
-                      {game.originalPrice && (
-                        <span className="text-sm text-muted-foreground line-through mr-2">
-                          {game.originalPrice} ₽
-                        </span>
-                      )}
-                      <span className="text-xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-                        {game.isFree ? 'Бесплатно' : `${game.price} ₽`}
+                  <div className="pt-2">
+                    {game.originalPrice && (
+                      <span className="text-sm text-muted-foreground line-through mr-2">
+                        {game.originalPrice} ₽
                       </span>
-                    </div>
+                    )}
+                    <span className="text-xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+                      {game.isFree ? 'Бесплатно' : `${game.price} ₽`}
+                    </span>
                   </div>
 
                   <Button 
                     className="w-full gradient-purple glow-purple"
                     onClick={() => addToCart(game.id)}
                   >
-                    {game.isFree ? (
-                      <>
-                        <Icon name="Download" className="mr-2" size={18} />
-                        Установить
-                      </>
-                    ) : (
-                      <>
-                        <Icon name="ShoppingBag" className="mr-2" size={18} />
-                        Купить
-                      </>
-                    )}
+                    <Icon name="ShoppingBag" className="mr-2" size={18} />
+                    {game.isFree ? 'Установить' : 'Купить'}
                   </Button>
                 </div>
               </CardContent>
@@ -527,20 +612,8 @@ const Index = () => {
             <Icon name="SearchX" size={64} className="mx-auto text-muted-foreground mb-4" />
             <h3 className="text-2xl font-bold mb-2">Игры не найдены</h3>
             <p className="text-muted-foreground mb-6">
-              Попробуйте изменить фильтры или поисковый запрос
+              Попробуйте изменить поисковый запрос
             </p>
-            <Button 
-              variant="outline"
-              onClick={() => {
-                setSearchQuery('');
-                setSelectedGenres([]);
-                setSelectedPlatforms([]);
-                setPriceRange([0, 1000]);
-                setFilterType('all');
-              }}
-            >
-              Сбросить все фильтры
-            </Button>
           </div>
         )}
       </main>
@@ -549,19 +622,19 @@ const Index = () => {
         <div className="container mx-auto px-4 text-center">
           <div className="flex items-center justify-center gap-2 mb-3">
             <div className="w-8 h-8 rounded-lg gradient-purple flex items-center justify-center">
-              <Icon name="Smartphone" className="text-white" size={18} />
+              <Icon name="ShoppingBag" className="text-white" size={18} />
             </div>
-            <span className="font-bold text-lg">MobileGames</span>
+            <span className="font-bold text-lg">AdminShop.ru</span>
           </div>
           <p className="text-sm text-muted-foreground mb-4">
-            Лучшие мобильные игры для iOS и Android
+            Магазин цифровых игр для ПК и мобильных устройств
           </p>
           <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground">
             <a href="#" className="hover:text-primary transition-colors">О нас</a>
             <span>•</span>
             <a href="#" className="hover:text-primary transition-colors">Поддержка</a>
             <span>•</span>
-            <a href="#" className="hover:text-primary transition-colors">Блог</a>
+            <a href="#" className="hover:text-primary transition-colors">Контакты</a>
           </div>
         </div>
       </footer>
